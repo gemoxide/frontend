@@ -7,15 +7,19 @@ type AuthGuardProps = {
 };
 
 const AuthGuard = ({ children }: AuthGuardProps) => {
-  const { token } = useAuth();
-  const location = useLocation();
-//   if (!token) {
-//     return <Navigate to="/login" />;
-//   }
-    if (token && location.pathname === "/login") {
-        return <Navigate to="/admin" replace />;
+    const { token } = useAuth();
+    // const location = useLocation();
+
+    // if (token && location.pathname !== "/login") {
+    //     return <Navigate to="/admin" />;
+    // }else if (!token && location.pathname !== "/login") {
+    //     return <Navigate to="/login" />;
+    // }
+    if (!token) {
+        return <Navigate to="/login" />;
     }
-  return children;
+
+    return children;
 };
 
 export default AuthGuard;
