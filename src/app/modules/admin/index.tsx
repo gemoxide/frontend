@@ -1,0 +1,23 @@
+import { useAuth } from "../../core/context/useAuth";
+import { useNavigate } from "react-router-dom";
+
+const Admin = () => {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
+    return (
+        <div>
+            <h1 className="text-2xl font-bold text-red-500">
+                Welcome to Admin Dashboard
+            </h1>
+            <button className="btn btn-sm" onClick={handleLogout}>
+                Logout
+            </button>
+        </div>
+    );
+};
+
+export default Admin;
