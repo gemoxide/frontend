@@ -1,4 +1,4 @@
-import App from "./app";
+import App from "./appRoute";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./core/context/AuthContext";
 

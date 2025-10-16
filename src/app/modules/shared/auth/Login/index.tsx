@@ -18,7 +18,6 @@ const Login = () => {
             if(data) {
                 authLogin(data.user, data.access_token);
                 navigate("/admin");
-                // console.log(data)
             }
         } catch(error) {
             alert("Something went wrong");
