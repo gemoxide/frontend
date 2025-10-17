@@ -5,13 +5,14 @@ import Login from "./modules/shared/auth/Login";
 import Register from "./modules/shared/auth/Register";
 
 import Admin from "./modules/admin";
+import Navigation from "./modules/admin/navigation";
 
 const App = () => {
   return (
     <>
         <Routes>
-            {/* <Route path="/" element={<Navigate to="/login" />} />
-            <Route 
+            <Route path="/" element={<Login />} />
+            {/* <Route 
                 path="/login" 
                 element={
                     <AuthGuard>
@@ -33,6 +34,7 @@ const App = () => {
 
             {/* Protected routes */}
             <Route path="/admin" element={<Admin />} />
+            <Route path="/navigation" element={<Navigation />} />
         </Route>
         </Routes>
     </>
