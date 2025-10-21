@@ -1,32 +1,46 @@
-import { useState } from "react";
-import { login } from "../../../../core/services/auth/auth.service";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../../core/context/useAuth";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { loginUser } from "../../../../core/state/reducer/auth";
+import { ROUTES } from "../../../../core/constants/routes";
+import type { AppDispatch } from "../../../../core/state/store";
 
-const Login = () => {
+const Login: React.FC = () => {
+  console.log("Login component is rendering");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const navigate = useNavigate();
-    const { login: authLogin } = useAuth();
+  // Get redirect URL from query params
+  const redirectUrl = searchParams.get("redirect") || ROUTES.USER.dashboard.key;
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const { data } = await login(email, password);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-            if(data) {
-                authLogin(data.user, data.access_token);
-                navigate("/admin");
-            }
-        } catch(error) {
-            alert("Something went wrong");
-            console.log(error);
-        }
-    };
+    try {
+      const result = await dispatch(loginUser({ email, password }));
+      console.log("Login result:", result);
 
-    return (
-        <section className="bg-gray-50 dark:bg-gray-900">
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        navigate(redirectUrl);
+      }, 100);
+    } catch (error) {
+      console.error("Login failed:", error);
+      setError("Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="bg-gray-50 dark:bg-gray-900">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
         <a
           href="#"
@@ -44,7 +58,16 @@ const Login = () => {
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
               Sign in to your account
             </h1>
-            <form autoComplete="off" className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <form
+              autoComplete="off"
+              className="space-y-4 md:space-y-6"
+              onSubmit={handleSubmit}
+            >
               <div>
                 <label
                   htmlFor="email"
@@ -84,16 +107,17 @@ const Login = () => {
 
               <button
                 type="submit"
-                className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                disabled={loading}
+                className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 disabled:opacity-50"
               >
-                Sign in
+                {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
           </div>
         </div>
       </div>
     </section>
-    );
+  );
 };
 
 export default Login;
