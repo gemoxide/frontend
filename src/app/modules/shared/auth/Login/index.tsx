@@ -1,22 +1,56 @@
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { loginUser } from "../../../../core/state/reducer/auth";
+import { loginRequestAction } from "../../../../core/state/reducer/auth";
 import { ROUTES } from "../../../../core/constants/routes";
-import type { AppDispatch } from "../../../../core/state/store";
-
+import type { AppDispatch, RootState } from "../../../../core/state/store";
+import { toast } from "react-toastify";
 const Login: React.FC = () => {
   console.log("Login component is rendering");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Get authentication state from Redux
+  const {
+    loading: loginLoading,
+    success: loginSuccess,
+    error: loginError,
+  } = useSelector((state: RootState) => state.auth.login);
+
+  const {
+    loading: userLoading,
+    success: userSuccess,
+    data: currentUser,
+  } = useSelector((state: RootState) => state.auth.user);
+
   // Get redirect URL from query params
   const redirectUrl = searchParams.get("redirect") || ROUTES.USER.dashboard.key;
+
+  // Handle navigation after successful authentication
+  useEffect(() => {
+    if (loginSuccess && userSuccess && currentUser) {
+      console.log("Login successful, navigating to:", redirectUrl);
+      navigate(redirectUrl);
+    }
+  }, [loginSuccess, userSuccess, currentUser, navigate, redirectUrl]);
+
+  // Handle login errors
+  useEffect(() => {
+    if (loginError) {
+      setError("Invalid email or password. Please try again.");
+      setLoading(false);
+    }
+  }, [loginError]);
+
+  // Update loading state based on Redux state
+  useEffect(() => {
+    setLoading(loginLoading || userLoading);
+  }, [loginLoading, userLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,20 +58,23 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const result = await dispatch(loginUser({ email, password }));
-      console.log("Login result:", result);
-
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        navigate(redirectUrl);
-      }, 100);
-    } catch (error) {
+      dispatch(loginRequestAction({ email, password }));
+      console.log("Login dispatched");
+    } catch (error: unknown) {
       console.error("Login failed:", error);
-      setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (loginSuccess) {
+      toast.success("Login successful");
+    }
+    if (loginError) {
+      toast.error("Invalid email or password. Please try again.");
+    }
+  }, [loginSuccess, loginError]);
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900">

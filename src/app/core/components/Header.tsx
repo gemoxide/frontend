@@ -1,5 +1,8 @@
-import { useAuth } from "../context/useAuth";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../state/reducer/auth";
+import type { RootState } from "../state/store";
+import type { AppDispatch } from "../state/store";
 
 interface HeaderProps {
   title?: string;
@@ -10,11 +13,12 @@ const Header = ({
   title = "Admin Dashboard",
   showLogout = true,
 }: HeaderProps) => {
-  const { logout, user } = useAuth();
+  const { data: user } = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     navigate("/login");
   };
 
