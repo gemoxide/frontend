@@ -1,172 +1,191 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { API_URLS } from "../../config/api.config";
-import type {
-  LoginResponse,
-  UserFromState,
-} from "../../interfaces/user.interface";
-
-// Define the auth state interface
-interface AuthState {
-  user: {
-    data: UserFromState | null;
-    loading: boolean;
-    success: boolean;
-    error: string | null;
-    initialized: boolean; // Track if we've attempted to fetch user data on app start
-  };
-  login: {
-    data: LoginResponse | null;
-    loading: boolean;
-    success: boolean;
-    error: string | null;
-  };
-}
+import { createSlice } from "@reduxjs/toolkit";
+import { bindActionCreators } from "redux";
+import type { Dispatch } from "redux";
+import type { AuthState, LoginPayload } from "../types";
 
 const initialState: AuthState = {
-  user: {
-    data: null,
-    loading: false,
-    success: false,
-    error: null,
-    initialized: false,
-  },
   login: {
-    data: null,
+    data: {
+      access_token: "",
+      expires_in: 0,
+      token_type: "",
+      user: undefined,
+    },
     loading: false,
     success: false,
-    error: null,
+    error: false,
+  },
+  user: {
+    data: undefined,
+    loading: false,
+    success: false,
+    error: false,
+  },
+  logout: {
+    data: undefined,
+    loading: false,
+    success: false,
+    error: false,
   },
 };
-
-// Create async thunks for API calls
-export const loginUser = createAsyncThunk<
-  LoginResponse,
-  { email: string; password: string }
->(
-  "auth/loginUser",
-  async (credentials: { email: string; password: string }) => {
-    const response = await fetch(API_URLS.LOGIN, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json() as Promise<LoginResponse>;
-  }
-);
-
-export const getCurrentUser = createAsyncThunk<UserFromState, void>(
-  "auth/getCurrentUser",
-  async (_, { rejectWithValue }) => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return rejectWithValue("No token found");
-    }
-
-    try {
-      const response = await fetch(API_URLS.ME, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        // If token is invalid, clear it from localStorage
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("access_token");
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      // The API returns { data: { ...user } }, so we need to extract the data
-      return result.data as UserFromState;
-    } catch (error) {
-      console.error("getCurrentUser error:", error);
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    }
-  }
-);
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    logout: (state) => {
-      state.user.data = null;
-      state.login.data = null;
+    // Login Actions
+    login(state) {
+      state.login = {
+        data: undefined,
+        loading: true,
+        success: false,
+        error: false,
+      };
+    },
+    loginRequest(state) {
+      state.login = {
+        data: undefined,
+        loading: true,
+        success: false,
+        error: false,
+      };
+    },
+    loginSuccess(state, actions) {
+      state.login = {
+        data: actions.payload,
+        loading: false,
+        success: true,
+        error: false,
+      };
+      // Store token in localStorage
+      if (actions.payload.access_token) {
+        localStorage.setItem("access_token", actions.payload.access_token);
+        localStorage.setItem("token", actions.payload.access_token);
+      }
+      // Store user data if available
+      if (actions.payload.user) {
+        state.user = {
+          data: actions.payload.user,
+          loading: false,
+          success: true,
+          error: false,
+        };
+      }
+    },
+    loginFailure(state) {
+      state.login = {
+        data: undefined,
+        loading: false,
+        success: false,
+        error: true,
+      };
+    },
+
+    // Get Current User Actions
+    getCurrentUser(state) {
+      state.user = {
+        data: undefined,
+        loading: true,
+        success: false,
+        error: false,
+      };
+    },
+    getCurrentUserSuccess(state, actions) {
+      state.user = {
+        data: actions.payload,
+        loading: false,
+        success: true,
+        error: false,
+      };
+    },
+    getCurrentUserFailure(state) {
+      state.user = {
+        data: undefined,
+        loading: false,
+        success: false,
+        error: true,
+      };
+    },
+
+    // Logout Actions
+    logout(state) {
+      state.logout = {
+        data: undefined,
+        loading: true,
+        success: false,
+        error: false,
+      };
+    },
+    logoutSuccess(state) {
+      state.logout = {
+        data: true,
+        loading: false,
+        success: true,
+        error: false,
+      };
+      // Clear user and login data
+      state.user = {
+        data: undefined,
+        loading: false,
+        success: false,
+        error: false,
+      };
+      state.login = {
+        data: {
+          access_token: "",
+          expires_in: 0,
+          token_type: "",
+          user: undefined,
+        },
+        loading: false,
+        success: false,
+        error: false,
+      };
+      // Clear localStorage
       localStorage.removeItem("access_token");
       localStorage.removeItem("token");
     },
-    clearError: (state) => {
-      state.user.error = null;
-      state.login.error = null;
+    logoutFailure(state) {
+      state.logout = {
+        data: undefined,
+        loading: false,
+        success: false,
+        error: true,
+      };
     },
   },
-  extraReducers: (builder) => {
-    // Login cases
-    builder
-      .addCase(loginUser.pending, (state) => {
-        state.login.loading = true;
-        state.login.error = null;
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.login.loading = false;
-        state.login.success = true;
-        state.login.data = action.payload;
-        // Store token with consistent key
-        localStorage.setItem("token", action.payload.access_token);
-        localStorage.setItem("access_token", action.payload.access_token);
-        // Set user data from login response
-        state.user.data = action.payload.user;
-        state.user.success = true;
-        state.user.loading = false;
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.login.loading = false;
-        state.login.error = action.error.message || "Login failed";
-      });
-
-    // Get current user cases
-    builder
-      .addCase(getCurrentUser.pending, (state) => {
-        state.user.loading = true;
-        state.user.error = null;
-        state.user.initialized = true; // Mark as initialized when we start fetching
-      })
-      .addCase(getCurrentUser.fulfilled, (state, action) => {
-        state.user.loading = false;
-        state.user.success = true;
-        state.user.data = action.payload;
-      })
-      .addCase(getCurrentUser.rejected, (state, action) => {
-        state.user.loading = false;
-        state.user.error = action.error.message || "Failed to get user data";
-        // Clear user data if token is invalid
-        if (
-          action.error.message?.includes("401") ||
-          action.error.message?.includes("No token found")
-        ) {
-          state.user.data = null;
-          state.login.data = null;
-        }
-      });
-  },
 });
 
-export const { logout, clearError } = authSlice.actions;
-export default authSlice.reducer;
-
-// Action creators for mapDispatchToProps
-export const mapDispatchToProps = () => ({
-  loginUser,
+// Export actions
+export const {
+  login,
+  loginRequest,
+  loginFailure,
+  loginSuccess,
   getCurrentUser,
+  getCurrentUserSuccess,
+  getCurrentUserFailure,
   logout,
-  clearError,
+  logoutSuccess,
+  logoutFailure,
+} = authSlice.actions;
+
+// Create a custom action creator for login request
+export const loginRequestAction = (payload: LoginPayload) => ({
+  type: loginRequest.type,
+  payload,
 });
+
+// Export action creators for useDispatch
+export const mapDispatchToProps = (dispatch: Dispatch) => {
+  return bindActionCreators(
+    {
+      login,
+      getCurrentUser,
+      logout,
+    },
+    dispatch
+  );
+};
+
+export default authSlice.reducer;

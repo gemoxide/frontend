@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../state/store";
@@ -11,6 +11,7 @@ interface RouteHandlerProps {
 const RouteHandler: React.FC<RouteHandlerProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Get authentication state
   const {
@@ -26,7 +27,17 @@ const RouteHandler: React.FC<RouteHandlerProps> = ({ children }) => {
     userSuccess &&
     (auth?.access_token || localStorage.getItem("token"));
 
+  // Initialize after first render to allow Redux state to rehydrate
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
     console.log("RouteHandler - Path:", location.pathname);
     console.log("RouteHandler - IsAuthenticated:", isAuthenticated);
     console.log("RouteHandler - Loading:", getUserLoading);
@@ -37,12 +48,6 @@ const RouteHandler: React.FC<RouteHandlerProps> = ({ children }) => {
       "RouteHandler - Token in localStorage:",
       localStorage.getItem("token")
     );
-
-    // Don't redirect if still loading
-    if (getUserLoading) {
-      console.log("RouteHandler - Still loading, waiting...");
-      return;
-    }
 
     const path = location.pathname;
 
@@ -63,40 +68,34 @@ const RouteHandler: React.FC<RouteHandlerProps> = ({ children }) => {
       return;
     }
 
-    // Check if there's a token in localStorage but no user data yet
-    const token = localStorage.getItem("token");
-    if (token && !currentUser && !getUserLoading) {
-      console.log(
-        "RouteHandler - Token exists but no user data, waiting for user fetch..."
-      );
-      return; // Wait for the App component to fetch user data
+    // Don't redirect if still loading - wait for App component to complete authentication
+    if (getUserLoading) {
+      console.log("RouteHandler - Still loading, waiting for App component...");
+      return;
     }
 
-    // If user is not authenticated and trying to access protected route
-    if (!isAuthenticated && !token) {
-      console.log("RouteHandler - No token found, redirecting to login");
-      // Redirect to login but preserve the intended destination
-      const redirectUrl = encodeURIComponent(path);
-      navigate(`${ROUTES.AUTH.login.key}?redirect=${redirectUrl}`, {
-        replace: true,
-      });
-    } else if (token && !isAuthenticated && !getUserLoading) {
+    // Only redirect if we're certain the user is not authenticated
+    // (no token AND no user data AND not loading)
+    const token = localStorage.getItem("token");
+    if (!token && !currentUser && !getUserLoading) {
       console.log(
-        "RouteHandler - Token exists but authentication failed, redirecting to login"
+        "RouteHandler - No token and no user data, redirecting to login"
       );
-      // Token exists but authentication failed (token expired/invalid)
+      // Redirect to login but preserve the intended destination
       const redirectUrl = encodeURIComponent(path);
       navigate(`${ROUTES.AUTH.login.key}?redirect=${redirectUrl}`, {
         replace: true,
       });
     }
   }, [
+    isInitialized,
     isAuthenticated,
     getUserLoading,
     location.pathname,
     navigate,
     currentUser,
     userSuccess,
+    auth,
   ]);
 
   // Always render children - let individual route guards handle protection
