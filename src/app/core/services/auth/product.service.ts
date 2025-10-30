@@ -1,9 +1,10 @@
 import type { AxiosResponse } from "axios";
 import httpClient from "../../clients/httpClients";
 import type { IProductCreate } from "../../interfaces/product.interface";
+import type { Filter } from "../../state/types/common";
 
-export const getProductsRequest = (): Promise<AxiosResponse> => {
-  return httpClient.get(`/api/v1/products`);
+export const getProductsRequest = (filter: Filter): Promise<AxiosResponse> => {
+  return httpClient.get(`/api/v1/products`, { params: filter });
 };
 
 export const getProductRequest = (id: number): Promise<AxiosResponse> => {

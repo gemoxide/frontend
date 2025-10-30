@@ -17,8 +17,8 @@ export interface IProductRelationships {
 }
 
 export interface IProductList {
-  data?: IProduct[];
-  meta?: IMeta;
+  data: IProduct[];
+  meta: IMeta;
 }
 
 export interface IProductCreate {

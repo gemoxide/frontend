@@ -18,3 +18,9 @@ export type Tab = {
   name: string;
   component?: React.ReactElement;
 };
+
+export type Filter = {
+  page?: number;
+  per_page?: number;
+  search?: string;
+};

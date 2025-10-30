@@ -16,6 +16,7 @@ export const ROUTES = {
     reports: { key: adminBasePath + "/reports" },
     settings: { key: adminBasePath + "/settings" },
     clients: { key: adminBasePath + "/clients" }, //localhost:3000/admin/clients
+    products: { key: adminBasePath + "/products" }, //localhost:3000/admin/products
   },
   USER: {
     dashboard: { key: "/dashboard" }, //localhost:3000/dashboard
