@@ -5,6 +5,7 @@ import Admin from "../../../modules/admin";
 import { ROUTES } from "../../constants/routes";
 import { ForAdminComponent } from "../../components/TestNavigation";
 import Clients from "../../../modules/admin/clients";
+import Products from "../../../modules/admin/products";
 
 const userTypes = [UserTypes.admin];
 
@@ -38,9 +39,20 @@ export const clients: RouteItem = {
   roles: ["Administrator"], // Use exact role name from API
 };
 
+export const products: RouteItem = {
+  name: "Products",
+  id: ROUTES.ADMIN.products.key,
+  path: ROUTES.ADMIN.products.key,
+  component: Products,
+  guard: AuthGuard,
+  userTypes,
+  roles: ["Administrator"], // Use exact role name from API
+};
+
 export const adminRoutes: RouteItem[] = [
   overview, // Main admin dashboard route
   testForAdmin,
   clients,
+  products,
   // ... other admin routes
 ];
